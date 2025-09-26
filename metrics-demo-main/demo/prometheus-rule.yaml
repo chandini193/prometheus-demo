@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: prometheus-rules
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: ./basic.rules
+      rules:
+        - alert: TestAlert
+          annotations:
+            summary: "Test Alert"
+            description: "Test Alert"
+          expr: >
+            http_request_duration_seconds_count > 5
+          for: 1m
+          labels:
+            severity: critical
+            alert_noc: 'false'
+            namespace: demo

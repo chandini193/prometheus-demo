@@ -1,0 +1,76 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: alertmanager-config
+  labels:
+    release: prometheus
+spec:
+  route:
+    receiver: 'null'
+    groupBy: ['alertname']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 3h
+    continue: true
+    routes:
+      - receiver: msteams-nonprod
+        groupBy: ['alertname']
+        matchers:
+          - matchtype: '=~'
+            name: 'severity'
+            value: ^(?:info|warning|critical)$
+          - matchtype: '!~'
+            name: 'env'
+            value: ^(?:sdemo|sbox|prev|clitrn|prod)$
+        continue: true
+      - receiver: msteams-prod
+        groupBy: ['alertname']
+        matchers:
+          - matchtype: '=~'
+            name: 'severity'
+            value: ^(?:info|warning|critical)$
+          - matchtype: '=~'
+            name: 'env'
+            value: ^(?:sdemo|sbox|prev|clitrn|prod)$
+        continue: true
+      - receiver: xmatters
+        groupBy: ['alertname']
+        matchers:
+          - matchtype: '=~'
+            name: 'severity'
+            value: critical
+          - matchtype: '=~'
+            name: 'env'
+            value: prod
+        continue: true
+      - receiver: noc-receiver
+        groupBy: ['alertname']
+        matchers:
+          - matchtype: '='
+            name: 'alert_noc'
+            value: 'true'
+        repeatInterval: 15m
+        continue: true
+      - receiver: 'null'
+        matchers:
+          - matchtype: '=~'
+            name: 'alertname'
+            value: "^(?:InfoInhibitor|Watchdog)$"
+  receivers:
+    - name: msteams-nonprod
+      webhookConfigs:
+        - sendResolved: true
+          url: http://msteams:2000/eks-nonprod
+    - name: msteams-prod
+      webhookConfigs:
+        - sendResolved: true
+          url: http://msteams:2000/eks-prod
+    - name: xmatters
+      webhookConfigs:
+        - sendResolved: true
+          url: https://test.xmatters.com/api/integration/1/functions/123/triggers?apiKey=12345
+    - name: noc-receiver
+      webhookConfigs:
+        - sendResolved: true
+          url: http://mon101.test.com:10080
+    - name: 'null'
